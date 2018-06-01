@@ -124,9 +124,7 @@ def dashboard(request):
     unassigned_tickets = Ticket.objects.select_related('queue').filter(
         assigned_to__isnull=True,
         queue__in=user_queues
-    ).exclude(
-        status=Ticket.CLOSED_STATUS,
-    )
+    ).exclude(status=Ticket.CLOSED_STATUS)
 
     # all tickets, reported by current user
     all_tickets_reported_by_current_user = ''
