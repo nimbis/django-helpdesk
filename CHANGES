@@ -1,3 +1,11 @@
+0.2.6+nimbis.18 (2018-06-21):
+
+	* Tickets in the admin lists on the dashboard will now be displayed
+	  regardless of their assignement status.
+
+	* Move tickets in the Duplicate state to the "tickets_closed_resolved"
+	  list.
+
 0.2.6+nimbis.16 (2018-6-4):
 
     * Show closed tickets in helpdesk dashboard.
