@@ -3,16 +3,15 @@ distributed with django-helpdesk.
 
 1. License for jQuery & jQuery UI
 2. License for jQuery UI 'Smoothness' theme
-3. License for akismet.py
-4. License for jqPlot
-5. License for StartBootstrap SB Admin v2.0 theme
-6. License for Raphael
-7. License for Morris.js
-8. License for DataTables
-9. License for Flot
-10. License for Metis Menu
-11. License for Bootstrap CSS
-12. License for Font Awesome
+3. License for jqPlot
+4. License for StartBootstrap SB Admin v2.0 theme
+5. License for Raphael
+6. License for Morris.js
+7. License for DataTables
+8. License for Flot
+9. License for Metis Menu
+10. License for Bootstrap CSS
+11. License for Font Awesome
 
 ----------------------------------------------------------------------
 
@@ -53,44 +52,7 @@ jQuery UI
 
 ----------------------------------------------------------------------
 
-3. License for akismet.py
-
-Copyright (c) 2003-2009, Michael Foord
-All rights reserved.
-E-mail : fuzzyman AT voidspace DOT org DOT uk
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-
-    * Neither the name of Michael Foord nor the name of Voidspace
-      may be used to endorse or promote products derived from this
-      software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-----------------------------------------------------------------------
-
-4. License for jqPlot
+3. License for jqPlot
 
 Copyright (c) 2009 - 2010 Chris Leonello
 
@@ -114,7 +76,7 @@ THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-5. License for StartBootstrap SB Admin v2.0 theme
+4. License for StartBootstrap SB Admin v2.0 theme
 
 The MIT License (MIT)
 
@@ -140,7 +102,7 @@ THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-6. License for Raphael
+5. License for Raphael
 
 The MIT License
 
@@ -166,7 +128,7 @@ THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-7. License for Morris.js
+6. License for Morris.js
 
 Copyright (c) 2013, Olly Smith
 All rights reserved.
@@ -193,7 +155,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ----------------------------------------------------------------------
 
-8. License for DataTables
+7. License for DataTables
 
 Copyright (C) 2008-2016, SpryMedia Ltd.
 
@@ -216,7 +178,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-9. License for Flot
+8. License for Flot
 
 Copyright (c) 2007-2014 IOLA and Ole Laursen
 
@@ -243,7 +205,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-10. License for Metis Menu
+9. License for Metis Menu
 
 Copyright (C) 2016, Osman Nuri Okumuş
 
@@ -266,7 +228,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-11. License for Bootstrap CSS
+10. License for Bootstrap CSS
 
 Copyright (c) 2011-2016 Twitter, Inc.
 
@@ -290,7 +252,7 @@ THE SOFTWARE.
 
 ----------------------------------------------------------------------
 
-12. License for Font Awesome
+11. License for Font Awesome
 
 
 Font License
