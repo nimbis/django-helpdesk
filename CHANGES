@@ -1,3 +1,7 @@
+0.2.6+nimbis.20 (2019-07-22):
+
+    * Replace broken login redirect with 404.
+
 0.2.6+nimbis.19 (2018-11-15):
 
     * Add management command to migrate tickets from one email to another.
