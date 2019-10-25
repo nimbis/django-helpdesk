@@ -1,3 +1,8 @@
+0.2.6+nimbis.21 (2019-10-18):
+
+    * Remove text which instructs the user to reply to the
+      email in the email templates.
+
 0.2.6+nimbis.20 (2019-07-22):
 
     * Replace broken login redirect with 404.
