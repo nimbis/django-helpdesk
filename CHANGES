@@ -1,3 +1,9 @@
+0.2.6+nimbis.22 (2020-04-02):
+
+    * Remove text in email sent to the user after they submit
+      a new ticket informing them to reply to the email for
+      any questions about the ticket.
+
 0.2.6+nimbis.21 (2019-10-18):
 
     * Remove text which instructs the user to reply to the
