@@ -9,7 +9,7 @@ views/public.py - All public facing views, eg non-staff (no authentication
 from django import forms
 from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.utils.http import urlquote
