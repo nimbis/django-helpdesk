@@ -29,10 +29,11 @@ class DirectTemplateView(TemplateView):
                     context[key] = value
         return context
 
+
 app_name = 'helpdesk'
 
 urlpatterns = [
-    url(r'^dashboard/$',
+    url(r'^$',
         staff.dashboard,
         name='dashboard'),
 
@@ -146,16 +147,12 @@ urlpatterns = [
 ]
 
 urlpatterns += [
-    url(r'^$',
-        public.homepage,
-        name='home'),
-
     url(r'^view/$',
-        public.view_ticket,
+        login_required(public.view_ticket),
         name='public_view'),
 
     url(r'^change_language/$',
-        public.change_language,
+        login_required(public.change_language),
         name='public_change_language'),
 ]
 
@@ -181,18 +178,6 @@ urlpatterns += [
         name='rss_activity'),
 ]
 
-
-urlpatterns += [
-    url(r'^login/$',
-        auth_views.login,
-        {'template_name': 'helpdesk/registration/login.html'},
-        name='login'),
-
-    url(r'^logout/$',
-        auth_views.logout,
-        {'template_name': 'helpdesk/registration/login.html', 'next_page': '../'},
-        name='logout'),
-]
 
 if helpdesk_settings.HELPDESK_KB_ENABLED:
     urlpatterns += [

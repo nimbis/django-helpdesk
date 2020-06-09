@@ -11,7 +11,7 @@ forms.py - Definitions of newforms-based forms for creating and maintaining
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.six import StringIO
 from django import forms
-from django.forms import extras
+from django.forms import widgets
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import get_user_model
@@ -136,7 +136,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
     """
     queue = forms.ChoiceField(
         widget=forms.Select(attrs={'class': 'form-control'}),
-        label=_('Queue'),
+        label=_('Category'),
         required=True,
         choices=()
     )
@@ -191,7 +191,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
 
             self.customfield_to_field(field, instanceargs)
 
-    def _create_ticket(self):
+    def _create_ticket(self, request=None):
         queue = Queue.objects.get(id=int(self.cleaned_data['queue']))
 
         ticket = Ticket(title=self.cleaned_data['title'],
@@ -202,6 +202,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
                         description=self.cleaned_data['body'],
                         priority=self.cleaned_data['priority'],
                         due_date=self.cleaned_data['due_date'],
+                        request=request
                         )
 
         return ticket, queue
@@ -246,9 +247,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
                 context,
                 recipients=ticket.submitter_email,
                 sender=queue.from_address,
-                fail_silently=True,
-                files=files,
-            )
+                fail_silently=True)
             messages_sent_to.append(ticket.submitter_email)
 
         if ticket.assigned_to and \
@@ -261,9 +260,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
                 context,
                 recipients=ticket.assigned_to.email,
                 sender=queue.from_address,
-                fail_silently=True,
-                files=files,
-            )
+                fail_silently=True)
             messages_sent_to.append(ticket.assigned_to.email)
 
         if queue.new_ticket_cc and queue.new_ticket_cc not in messages_sent_to:
@@ -272,9 +269,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
                 context,
                 recipients=queue.new_ticket_cc,
                 sender=queue.from_address,
-                fail_silently=True,
-                files=files,
-            )
+                fail_silently=True)
             messages_sent_to.append(queue.new_ticket_cc)
 
         if queue.updated_ticket_cc and \
@@ -285,9 +280,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
                 context,
                 recipients=queue.updated_ticket_cc,
                 sender=queue.from_address,
-                fail_silently=True,
-                files=files,
-            )
+                fail_silently=True)
 
 
 class TicketForm(AbstractTicketForm):
@@ -311,6 +304,12 @@ class TicketForm(AbstractTicketForm):
                     'e-mailed details of this ticket immediately.'),
     )
 
+    viewable_globally = forms.BooleanField(
+        required=False,
+        label=_('Viewable globally'),
+        help_text=_('Should the ticket be viewable by any user?'),
+    )
+
     def __init__(self, *args, **kwargs):
         """
         Add any custom fields that are defined to the form.
@@ -318,18 +317,21 @@ class TicketForm(AbstractTicketForm):
         super(TicketForm, self).__init__(*args, **kwargs)
         self._add_form_custom_fields()
 
-    def save(self, user=None):
+    def save(self, user=None, request=None):
         """
         Writes and returns a Ticket() object
         """
 
-        ticket, queue = self._create_ticket()
+        ticket, queue = self._create_ticket(request=request)
         if self.cleaned_data['assigned_to']:
             try:
                 u = User.objects.get(id=self.cleaned_data['assigned_to'])
                 ticket.assigned_to = u
             except User.DoesNotExist:
                 ticket.assigned_to = None
+
+        if self.cleaned_data['viewable_globally']:
+            ticket.viewable_globally = self.cleaned_data['viewable_globally']
         ticket.save()
 
         self._create_custom_fields(ticket)
@@ -368,13 +370,21 @@ class PublicTicketForm(AbstractTicketForm):
         Add any (non-staff) custom fields that are defined to the form
         """
         super(PublicTicketForm, self).__init__(*args, **kwargs)
+
+        if hasattr(settings, 'HELPDESK_PUBLIC_TICKET_QUEUE'):
+            self.fields['queue'].widget = forms.HiddenInput()
+        if hasattr(settings, 'HELPDESK_PUBLIC_TICKET_PRIORITY'):
+            self.fields['priority'].widget = forms.HiddenInput()
+        if hasattr(settings, 'HELPDESK_PUBLIC_TICKET_DUE_DATE'):
+            self.fields['due_date'].widget = forms.HiddenInput()
+
         self._add_form_custom_fields(False)
 
-    def save(self):
+    def save(self, request=None):
         """
         Writes and returns a Ticket() object
         """
-        ticket, queue = self._create_ticket()
+        ticket, queue = self._create_ticket(request=request)
         if queue.default_owner and not ticket.assigned_to:
             ticket.assigned_to = queue.default_owner
         ticket.save()

@@ -9,22 +9,32 @@ lib.py - Common functions (eg multipart e-mail)
 import logging
 import mimetypes
 import os
+from smtplib import SMTPException
 
 try:
+    # Python 2 support
     from base64 import urlsafe_b64encode as b64encode
 except ImportError:
-    from base64 import encodestring as b64encode
+    # Python 3 support
+    from base64 import encodebytes as b64encode
 try:
+    # Python 2 support
     from base64 import urlsafe_b64decode as b64decode
 except ImportError:
-    from base64 import decodestring as b64decode
+    # Python 3 support
+    from base64 import decodebytes as b64decode
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db.models import Q
+from django.utils import six
 from django.utils.encoding import smart_text
 from django.utils.safestring import mark_safe
+from django.core.mail import EmailMultiAlternatives
+from django.template import engines
 
-from helpdesk.models import Attachment, EmailTemplate
+from helpdesk.settings import HELPDESK_EMAIL_SUBJECT_TEMPLATE, \
+    HELPDESK_EMAIL_FALLBACK_LOCALE
 
 logger = logging.getLogger('helpdesk')
 
@@ -62,23 +72,25 @@ def send_templated_mail(template_name,
         along with the File objects to be read. files can be blank.
 
     """
-    from django.core.mail import EmailMultiAlternatives
-    from django.template import engines
-    from_string = engines['django'].from_string
-
     from helpdesk.models import EmailTemplate
-    from helpdesk.settings import HELPDESK_EMAIL_SUBJECT_TEMPLATE, \
-        HELPDESK_EMAIL_FALLBACK_LOCALE
+
+    from_string = engines['django'].from_string
 
     locale = context['queue'].get('locale') or HELPDESK_EMAIL_FALLBACK_LOCALE
 
     try:
-        t = EmailTemplate.objects.get(template_name__iexact=template_name, locale=locale)
+        t = EmailTemplate.objects.get(
+            template_name__iexact=template_name,
+            locale=locale)
     except EmailTemplate.DoesNotExist:
         try:
-            t = EmailTemplate.objects.get(template_name__iexact=template_name, locale__isnull=True)
+            t = EmailTemplate.objects.get(
+                template_name__iexact=template_name,
+                locale__isnull=True)
         except EmailTemplate.DoesNotExist:
-            logger.warning('template "%s" does not exist, no mail sent', template_name)
+            logger.warning(
+                'template "%s" does not exist, no mail sent',
+                template_name)
             return  # just ignore if template doesn't exist
 
     subject_part = from_string(
@@ -92,10 +104,14 @@ def send_templated_mail(template_name,
         "%s{%% include '%s' %%}" % (t.plain_text, footer_file)
     ).render(context)
 
-    email_html_base_file = os.path.join('helpdesk', locale, 'email_html_base.html')
+    email_html_base_file = os.path.join(
+        'helpdesk',
+        locale,
+        'email_html_base.html')
     # keep new lines in html emails
     if 'comment' in context:
-        context['comment'] = mark_safe(context['comment'].replace('\r\n', '<br>'))
+        context['comment'] = mark_safe(
+            context['comment'].replace('\r\n', '<br>'))
 
     html_part = from_string(
         "{%% extends '%s' %%}{%% block title %%}"
@@ -117,9 +133,35 @@ def send_templated_mail(template_name,
 
     if files:
         for filename, filefield in files:
-            msg.attach(filename, open(filefield.path).read())
+            mime = mimetypes.guess_type(filename)
 
-    return msg.send(fail_silently)
+            # s3 storage does not support file paths,
+            # so we must use the file name instead.
+            filepath = filefield.name
+
+            if mime[0] is not None and mime[0] == "text/plain":
+                with default_storage.open(filepath, 'r') as attachedfile:
+                    content = attachedfile.read()
+                    msg.attach(filename, content)
+            else:
+                if six.PY3:
+                    msg.attach_file(filepath)
+                else:
+                    with default_storage.open(filepath, 'rb') as attachedfile:
+                        content = attachedfile.read()
+                        msg.attach(filename, content)
+
+    logger.debug('Sending email to: {!r}'.format(recipients))
+
+    try:
+        return msg.send()
+    except SMTPException as e:
+        logger.exception(
+            'SMTPException raised while sending email to {}'.format(
+                recipients))
+        if not fail_silently:
+            raise e
+        return 0
 
 
 def query_to_dict(results, descriptions):
@@ -127,8 +169,8 @@ def query_to_dict(results, descriptions):
     Replacement method for cursor.dictfetchall() as that method no longer
     exists in psycopg2, and I'm guessing in other backends too.
 
-    Converts the results of a raw SQL query into a list of dictionaries, suitable
-    for use in templates etc.
+    Converts the results of a raw SQL query into a list of dictionaries,
+    suitable for use in templates etc.
     """
 
     output = []
@@ -183,6 +225,38 @@ def apply_query(queryset, params):
     return queryset
 
 
+def ticket_template_context(ticket):
+    context = {}
+
+    for field in ('title', 'created', 'modified', 'submitter_email',
+                  'status', 'get_status_display', 'on_hold', 'description',
+                  'resolution', 'priority', 'get_priority_display',
+                  'last_escalation', 'ticket', 'ticket_for_url',
+                  'get_status', 'ticket_url', 'staff_url', '_get_assigned_to'
+                  ):
+        attr = getattr(ticket, field, None)
+        if callable(attr):
+            context[field] = '%s' % attr()
+        else:
+            context[field] = attr
+    context['assigned_to'] = context['_get_assigned_to']
+
+    return context
+
+
+def queue_template_context(queue):
+    context = {}
+
+    for field in ('title', 'slug', 'email_address', 'from_address', 'locale'):
+        attr = getattr(queue, field, None)
+        if callable(attr):
+            context[field] = attr()
+        else:
+            context[field] = attr
+
+    return context
+
+
 def safe_template_context(ticket):
     """
     Return a dictionary that can be used as a template context to render
@@ -199,81 +273,21 @@ def safe_template_context(ticket):
     """
 
     context = {
-        'queue': {},
-        'ticket': {}
+        'queue': queue_template_context(ticket.queue),
+        'ticket': ticket_template_context(ticket),
     }
-    queue = ticket.queue
-
-    for field in ('title', 'slug', 'email_address', 'from_address', 'locale'):
-        attr = getattr(queue, field, None)
-        if callable(attr):
-            context['queue'][field] = attr()
-        else:
-            context['queue'][field] = attr
-
-    for field in ('title', 'created', 'modified', 'submitter_email',
-                  'status', 'get_status_display', 'on_hold', 'description',
-                  'resolution', 'priority', 'get_priority_display',
-                  'last_escalation', 'ticket', 'ticket_for_url',
-                  'get_status', 'ticket_url', 'staff_url', '_get_assigned_to'
-                  ):
-        attr = getattr(ticket, field, None)
-        if callable(attr):
-            context['ticket'][field] = '%s' % attr()
-        else:
-            context['ticket'][field] = attr
-
     context['ticket']['queue'] = context['queue']
-    context['ticket']['assigned_to'] = context['ticket']['_get_assigned_to']
 
     return context
 
 
-def text_is_spam(text, request):
-    # Based on a blog post by 'sciyoshi':
-    # http://sciyoshi.com/blog/2008/aug/27/using-akismet-djangos-new-comments-framework/
-    # This will return 'True' is the given text is deemed to be spam, or
-    # False if it is not spam. If it cannot be checked for some reason, we
-    # assume it isn't spam.
-    from django.contrib.sites.models import Site
-    try:
-        from helpdesk.akismet import Akismet
-    except:
-        return False
-    try:
-        site = Site.objects.get_current()
-    except:
-        site = Site(domain='configure-django-sites.com')
-
-    ak = Akismet(
-        blog_url='http://%s/' % site.domain,
-        agent='django-helpdesk',
-    )
-
-    if hasattr(settings, 'TYPEPAD_ANTISPAM_API_KEY'):
-        ak.setAPIKey(key=settings.TYPEPAD_ANTISPAM_API_KEY)
-        ak.baseurl = 'api.antispam.typepad.com/1.1/'
-    elif hasattr(settings, 'AKISMET_API_KEY'):
-        ak.setAPIKey(key=settings.AKISMET_API_KEY)
-    else:
-        return False
-
-    if ak.verify_key():
-        ak_data = {
-            'user_ip': request.META.get('REMOTE_ADDR', '127.0.0.1'),
-            'user_agent': request.META.get('HTTP_USER_AGENT', ''),
-            'referrer': request.META.get('HTTP_REFERER', ''),
-            'comment_type': 'comment',
-            'comment_author': '',
-        }
-
-        return ak.comment_check(smart_text(text), data=ak_data)
-
-    return False
-
-
 def process_attachments(followup, attached_files):
-    max_email_attachment_size = getattr(settings, 'MAX_EMAIL_ATTACHMENT_SIZE', 512000)
+    from helpdesk.models import Attachment
+
+    max_email_attachment_size = getattr(
+        settings,
+        'MAX_EMAIL_ATTACHMENT_SIZE',
+        512000)
     attachments = []
 
     for attached in attached_files:

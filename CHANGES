@@ -1,0 +1,48 @@
+0.2.6+nimbis.22 (2020-04-02):
+
+    * Remove text in email sent to the user after they submit
+      a new ticket informing them to reply to the email for
+      any questions about the ticket.
+
+0.2.6+nimbis.21 (2019-10-18):
+
+    * Remove text which instructs the user to reply to the
+      email in the email templates.
+
+0.2.6+nimbis.20 (2019-07-22):
+
+    * Replace broken login redirect with 404.
+
+0.2.6+nimbis.19 (2018-11-15):
+
+    * Add management command to migrate tickets from one email to another.
+
+0.2.6+nimbis.18 (2018-08-29):
+
+	* Remove attachments from all sent emails.
+
+0.2.6+nimbis.17 (2018-7-17):
+
+	* "Owned by me" tickets will now filter based on all django-allauth
+	  EmailAddress objects associated with the user the filed the ticket,
+	  instead of just email address associated with the ticket.
+
+0.2.6+nimbis.16 (2018-6-4):
+
+    * Show closed tickets in helpdesk dashboard.
+
+0.2.6+nimbis.15 (2018-05-24):
+
+    * Correct ticket URLs in outgoing email messages whenever an existing
+      ticket is updated. There was still behavior in v0.2.6+nimbis.13 that
+      would cause these links to be broken in every case except for the case
+      of a new ticket.
+
+0.2.6+nimbis.14 (2018-05-18):
+
+    * Emails are now always sent to ticket subscribers when a ticket is
+      updated.
+
+0.2.6+nimbis.13 (2018-04-27):
+
+    * Correct ticket URLs in outgoing email messages

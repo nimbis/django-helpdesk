@@ -1,7 +1,7 @@
 {% extends "helpdesk/base.html" %}
 {% load i18n bootstrap humanize %}
 {% load static from staticfiles %}
-{% block helpdesk_title %}{% trans "View Ticket Details" %}{% endblock %}
+{% block helpdesk_title %}{{ ticket.queue.slug }}-{{ ticket.id }} : {% trans "View Ticket Details" %}{% endblock %}
 {% block helpdesk_head %}
 <script type='text/javascript' language='javascript'>
 $(document).ready(function() {
@@ -185,7 +185,7 @@ $(document).on('change', ':file', function() {
         </div></dd>
         {% endifequal %}
 
-        {% if helpdesk_settings.HELPDESK_UPDATE_PUBLIC_DEFAULT %}
+        {% if helpdesk_settings.HELPDESK_UPDATE_PUBLIC_DEFAULT or not is_staff %}
         <input type='hidden' name='public' value='1'>
         {% else %}
         <dt>
@@ -195,27 +195,6 @@ $(document).on('change', ':file', function() {
         <dd class='form_help_text'>{% trans "If this is public, the submitter will be e-mailed your comment or resolution." %}</dd>
         {% endif %}
     </dl>
-
-<p id='ShowFurtherOptPara'><button class="btn btn-warning btn-sm" id='ShowFurtherEditOptions'>{% trans "Change Further Details &raquo;" %}</button></p>
-
-<div id='FurtherEditOptions' style='display: none;'>
-
-    <dl>
-
-        <dt><label for='id_title'>{% trans "Title" %}</label></dt>
-        <dd><input type='text' name='title' value='{{ ticket.title|escape }}' /></dd>
-
-        <dt><label for='id_owner'>{% trans "Owner" %}</label></dt>
-        <dd><select id='id_owner' name='owner'><option value='0'>{% trans "Unassign" %}</option>{% for u in active_users %}<option value='{{ u.id }}' {% ifequal u.id ticket.assigned_to.id %}selected{% endifequal %}>{{ u }}</option>{% endfor %}</select></dd>
-
-        <dt><label for='id_priority'>{% trans "Priority" %}</label></dt>
-        <dd><select id='id_priority' name='priority'>{% for p in priorities %}<option value='{{ p.0 }}'{% ifequal p.0 ticket.priority %} selected='selected'{% endifequal %}>{{ p.1 }}</option>{% endfor %}</select></dd>
-        <dt><label for='id_due_date'>{% trans "Due on" %}</label></dt>
-        <dd>{{ form.due_date }}</dd>
-
-    </dl>
-
-</div>
 
 <p id='ShowFileUploadPara'><button class="btn btn-warning btn-sm" id='ShowFileUpload'>{% trans "Attach File(s) &raquo;" %}</button></p>
 

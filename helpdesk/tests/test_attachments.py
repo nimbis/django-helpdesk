@@ -6,7 +6,7 @@ import shutil
 from tempfile import gettempdir
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import override_settings, TestCase
 from django.utils.encoding import smart_text
 
@@ -60,7 +60,7 @@ class AttachmentIntegrationTests(TestCase):
         })
 
         # Ensure ticket form submits with attachment successfully
-        response = self.client.post(reverse('helpdesk:home'), post_data, follow=True)
+        response = self.client.post(reverse('helpdesk:dashboard'), post_data, follow=True)
         self.assertContains(response, test_file.name)
 
         # Ensure attachment is available with correct content
@@ -78,7 +78,7 @@ class AttachmentIntegrationTests(TestCase):
         })
 
         # Ensure ticket form submits with attachment successfully
-        response = self.client.post(reverse('helpdesk:home'), post_data, follow=True)
+        response = self.client.post(reverse('helpdesk:dashboard'), post_data, follow=True)
         self.assertContains(response, test_file.name)
 
         # Ensure attachment is available with correct content

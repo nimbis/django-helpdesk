@@ -6,91 +6,39 @@ django-helpdesk - A Django powered ticket tracker for small enterprise.
 views/public.py - All public facing views, eg non-staff (no authentication
                   required) views.
 """
+from django import forms
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.utils.http import urlquote
 from django.utils.translation import ugettext as _
+from django.conf import settings
 
 from helpdesk import settings as helpdesk_settings
+from helpdesk.decorators import protect_view
 from helpdesk.forms import PublicTicketForm
-from helpdesk.lib import text_is_spam
 from helpdesk.models import Ticket, Queue, UserSettings, KBCategory
 
 
-def homepage(request):
-    if not request.user.is_authenticated() and helpdesk_settings.HELPDESK_REDIRECT_TO_LOGIN_BY_DEFAULT:
-        return HttpResponseRedirect(reverse('helpdesk:login'))
-
-    if request.user.is_staff or \
-            (request.user.is_authenticated() and
-             helpdesk_settings.HELPDESK_ALLOW_NON_STAFF_TICKET_UPDATE):
-        try:
-            if request.user.usersettings_helpdesk.settings.get('login_view_ticketlist', False):
-                return HttpResponseRedirect(reverse('helpdesk:list'))
-            else:
-                return HttpResponseRedirect(reverse('helpdesk:dashboard'))
-        except UserSettings.DoesNotExist:
-            return HttpResponseRedirect(reverse('helpdesk:dashboard'))
-
-    if request.method == 'POST':
-        form = PublicTicketForm(request.POST, request.FILES)
-        form.fields['queue'].choices = [('', '--------')] + [
-            (q.id, q.title) for q in Queue.objects.filter(allow_public_submission=True)]
-        if form.is_valid():
-            if text_is_spam(form.cleaned_data['body'], request):
-                # This submission is spam. Let's not save it.
-                return render(request, template_name='helpdesk/public_spam.html')
-            else:
-                ticket = form.save()
-                return HttpResponseRedirect('%s?ticket=%s&email=%s' % (
-                    reverse('helpdesk:public_view'),
-                    ticket.ticket_for_url,
-                    urlquote(ticket.submitter_email))
-                )
-    else:
-        try:
-            queue = Queue.objects.get(slug=request.GET.get('queue', None))
-        except Queue.DoesNotExist:
-            queue = None
-        initial_data = {}
-        if queue:
-            initial_data['queue'] = queue.id
-
-        if request.user.is_authenticated() and request.user.email:
-            initial_data['submitter_email'] = request.user.email
-
-        form = PublicTicketForm(initial=initial_data)
-        form.fields['queue'].choices = [('', '--------')] + [
-            (q.id, q.title) for q in Queue.objects.filter(allow_public_submission=True)]
-
-    knowledgebase_categories = KBCategory.objects.all()
-
-    return render(request, 'helpdesk/public_homepage.html', {
-        'form': form,
-        'helpdesk_settings': helpdesk_settings,
-        'kb_categories': knowledgebase_categories
-    })
-
-
+@protect_view
 def view_ticket(request):
-    ticket_req = request.GET.get('ticket', '')
-    email = request.GET.get('email', '')
+    ticket_req = request.GET.get('ticket', None)
+    email = request.GET.get('email', None)
+    # If there is no email address in the query string, get it from
+    # the currently logged-in user
+    if not email:
+        email = request.user.email
 
     if ticket_req and email:
         queue, ticket_id = Ticket.queue_and_id_from_query(ticket_req)
         try:
-            ticket = Ticket.objects.get(id=ticket_id, submitter_email__iexact=email)
+            ticket = Ticket.objects.get(Q(id=ticket_id) & (Q(submitter_email__iexact=email) | Q(viewable_globally=True)))
         except ObjectDoesNotExist:
             error_message = _('Invalid ticket ID or e-mail address. Please try again.')
-
-            return render(request, 'helpdesk/public_view_form.html', {
-                'ticket': False,
-                'email': email,
-                'error_message': error_message,
-                'helpdesk_settings': helpdesk_settings,
-            })
+        except ValueError:
+            error_message = _('Invalid ticket ID or e-mail address. Please try again.')
         else:
             if request.user.is_staff:
                 redirect_url = reverse('helpdesk:view', args=[ticket_id])
@@ -124,6 +72,17 @@ def view_ticket(request):
                 'helpdesk_settings': helpdesk_settings,
                 'next': redirect_url,
             })
+    elif ticket_req is None and email is None:
+        error_message = None
+    else:
+        error_message = _('Missing ticket ID or e-mail address. Please try again.')
+
+    return render(request, 'helpdesk/public_view_form.html', {
+        'ticket': False,
+        'email': email,
+        'error_message': error_message,
+        'helpdesk_settings': helpdesk_settings,
+    })
 
 
 def change_language(request):

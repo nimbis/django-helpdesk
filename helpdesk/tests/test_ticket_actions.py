@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import TestCase
 from django.test.client import Client
 from helpdesk.models import CustomField, Queue, Ticket
@@ -9,6 +9,8 @@ try:  # python 3
     from urllib.parse import urlparse
 except ImportError:  # python 2
     from urlparse import urlparse
+
+from helpdesk.templatetags.ticket_to_link import num_to_link
 
 
 class TicketActionsTestCase(TestCase):
@@ -59,7 +61,7 @@ class TicketActionsTestCase(TestCase):
         # Django 1.9 compatible way of testing this
         # https://docs.djangoproject.com/en/1.9/releases/1.9/#http-redirects-no-longer-forced-to-absolute-uris
         urlparts = urlparse(first_redirect_url)
-        self.assertEqual(urlparts.path, reverse('helpdesk:home'))
+        self.assertEqual(urlparts.path, reverse('helpdesk:dashboard'))
 
         # test ticket deleted
         with self.assertRaises(Ticket.DoesNotExist):
@@ -121,6 +123,30 @@ class TicketActionsTestCase(TestCase):
         }
         response = self.client.post(reverse('helpdesk:update', kwargs={'ticket_id': ticket_id}), post_data, follow=True)
         self.assertContains(response, 'Changed Status from Open to Closed')
+
+    def test_num_to_link(self):
+        """Test that we are correctly expanding links to tickets from IDs"""
+
+        # make staff user
+        self.loginUser()
+
+        initial_data = {
+            'title': 'Some private ticket',
+            'queue': self.queue_public,
+            'assigned_to': self.user,
+            'status': Ticket.OPEN_STATUS,
+        }
+
+        # create ticket
+        ticket = Ticket.objects.create(**initial_data)
+        ticket_id = ticket.id
+
+        # generate the URL text
+        result = num_to_link('this is ticket#%s' % ticket_id)
+        self.assertEqual(result, "this is ticket <a href='/helpdesk/tickets/%s/' class='ticket_link_status ticket_link_status_Open'>#%s</a>" % (ticket_id, ticket_id))
+
+        result2 = num_to_link('whoa another ticket is here #%s huh' % ticket_id)
+        self.assertEqual(result2, "whoa another ticket is here  <a href='/helpdesk/tickets/%s/' class='ticket_link_status ticket_link_status_Open'>#%s</a> huh" % (ticket_id, ticket_id))
 
     def test_create_ticket_getform(self):
         self.loginUser()
