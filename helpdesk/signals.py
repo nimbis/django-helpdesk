@@ -9,7 +9,7 @@ from django.dispatch import receiver
 from .models import Ticket
 
 @receiver(pre_save, sender=User)
-def email_address_update(sender, instance, **kwargs):
+def update_ticket_submitter_email(sender, instance, **kwargs):
     qs = User.objects.filter(id=instance.id)
     if not qs:
         return
