@@ -144,12 +144,9 @@ def send_templated_mail(template_name,
                     content = attachedfile.read()
                     msg.attach(filename, content)
             else:
-                if six.PY3:
-                    msg.attach_file(filepath)
-                else:
-                    with default_storage.open(filepath, 'rb') as attachedfile:
-                        content = attachedfile.read()
-                        msg.attach(filename, content)
+                with default_storage.open(filepath, 'rb') as attachedfile:
+                    content = attachedfile.read()
+                    msg.attach(filename, content)
 
     logger.debug('Sending email to: {!r}'.format(recipients))
 
