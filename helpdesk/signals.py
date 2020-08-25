@@ -23,4 +23,4 @@ def update_ticket_submitter_email(sender, instance, **kwargs):
     tickets = Ticket.objects.filter(submitter_email=pre_save_user.email)
     for ticket in tickets:
         ticket.submitter_email = instance.email
-        ticket.save()
+        ticket.save(update_fields=['submitter_email'])
